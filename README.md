@@ -15,6 +15,8 @@ For connecting to the database the following environmental variables need to be 
 - **MYSQL_PASSWORD** (Of the given user)
 - **MYSQL_DATABASE** (The database needs to be already available, the structure will be automaticly created on the first run)
 
+&nbsp;
+
 ## About this project
 
 ### GOAL
@@ -23,11 +25,15 @@ The goal of this project is collecting data from all fuelstations in the Netherl
 
 ---
 
+&nbsp;
+
 ### PROBLEM
 
 There are a lot of different fuelstations with different websites, for collecting this data a lot of webparsers need to be written. The other problem is with fuelstations that do not make their data publicly available.
 
 ---
+
+&nbsp;
 
 ### SOLUTION
 
@@ -39,9 +45,13 @@ ___
 
 The 'ANWB' did already collect an wide range of sources. They written an range of parsers and also collect data by visits.
 
+&nbsp;
+
 **Visits?**
 
 Yeah, while taking an look at the data from the ANWB I noticed that some prices have an source that is been marked 'VISIT'.
+
+&nbsp;
 
 **How does the ANWB know data from visits?**
 
@@ -51,7 +61,20 @@ The ANWB collects data from the bill from the creditcard in exchange for an disc
 
 But even if an fuelstation is not an member they still get used for getting the fuelprice (because the ANWB gets access to all fuelstation related creditcard transactions)
 
+&nbsp;
+
 **How to use this data?**
 
 The ANWB uses an REST API in their app for getting the latest collected fuelprice, this project uses that api for getting the stations and prices.
 
+&nbsp;
+
+**So whats the catch?**
+
+The ANWB only allows station lookups on an small targeted map 'geobox'. So for getting the whole Netherlands you need to map all the coordinates in the netherlands and request details from each of them. I created an script that creates those boxes and automaticly loops them all for getting all stations, but because some boxes are not inside the Netherlands they will be automaticly not be looped in the next run.
+
+&nbsp;
+
+**How to collect data?**
+
+Run this script daily :)
