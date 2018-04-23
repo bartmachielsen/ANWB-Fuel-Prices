@@ -19,6 +19,13 @@ class Coordinate(Base):
     def diff(self):
         return tuple(map(sub, (self.northEast_lat, self.northEast_lon), (self.southWest_lat, self.southWest_lon)))
     
+    @property
+    def southWest(self):
+        return (self.southWest_lat, self.southWest_lon)
+
+    @property
+    def northEast(self):
+        return (self.northEast_lat, self.northEast_lon)
 
 class FuelType(Base):
     __tablename__ = 'fueltypes'
@@ -34,3 +41,27 @@ class AverageFuelPrice(Base):
     updated = Column(String(50))
 
     __table_args__ = (UniqueConstraint('fueltype', 'updated', name='duplicate_measurement'),)
+
+class FuelStation(Base):
+    __tablename__ = "fuelstations"
+    id = Column(String(10), primary_key=True)
+    name = Column(String(50))
+    brand_name = Column(String(100))
+    display_name = Column(String(50))
+    location_lat = Column(Float)
+    location_lon = Column(Float)
+    street = Column(String(100))
+    postal_code = Column(String(10))
+    city = Column(String(50))
+    
+    fuelprices = relationship('FuelStationPrice')
+
+class FuelStationPrice(Base):
+    __tablename__ = "fuelstationprice"
+    id = Column(Integer, primary_key=True)
+    fueltype = Column(String(50), ForeignKey('fueltypes.code'))
+    station = Column(String(10), ForeignKey('fuelstation.id'))
+    price = Column(float)
+    price_level = Column(String(20))
+    record = Column(String(40))
+    source = Column(String(20))

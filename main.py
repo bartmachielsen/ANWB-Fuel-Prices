@@ -1,4 +1,4 @@
-from models import Coordinate, Base, FuelType, AverageFuelPrice
+from models import Coordinate, FuelType, AverageFuelPrice, FuelStation, FuelStationPrice, Base
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 Session = sessionmaker()
@@ -66,6 +66,23 @@ def run():
 
     session.commit()
 
+    for coordinate in session.query(Coordinate).all():
+        for station in connection.get_stations(coordinate.southWest, coordinate.northEast):
+            if not session.query(FuelStation).filter(FuelStation.id == station["id"]):
+                fuelstation = FuelStation(
+                    id=station["id"],
+                    name=station["name"],
+                    brand_name=station["brand_name"],
+                    display_name=station["display_name"],
+                    location_lat=station["location"]["latitutde"],
+                    location_lon=station["location"]["longitude"],
+                    street=station["address"]["street"],
+                    postal_code=station["address"]["postal_code"],
+                    city=station["location"]["city"])
+                session.add(fuelstation)
+            for fuelspecification in station["fuel_specifications"]:
+                pass
+            
 
 
 
