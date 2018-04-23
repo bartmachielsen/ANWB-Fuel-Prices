@@ -26,6 +26,7 @@ from anwb_connection import Connection
 
 
 def run():
+    logging.info("Starting application")
     engine = create_engine(
         'mysql+mysqldb://{}:{}@{}:{}/{}'.format(
             os.environ["MYSQL_USER"],
