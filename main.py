@@ -1,5 +1,5 @@
 from models import Coordinate, FuelType, AverageFuelPrice, FuelStation, FuelStationPrice, Base
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, func
 from sqlalchemy.orm import sessionmaker
 Session = sessionmaker()
 
@@ -42,6 +42,8 @@ def run():
     session = Session()
     connection = Connection()
 
+    logging.info("Calculating/updating coordinates")
+
     # calculating boxes and uploading them to the database for the first time
     if not session.query(Coordinate).all():
         for coordinate in generate_coordinates(
@@ -55,35 +57,67 @@ def run():
             ):
             session.add(coordinate)
 
+    session.commit()
+
+    logging.info("Getting fueltypes")
+
     # getting all available fuel types and saving them including the average pricing to the database
     for fueltype in connection.get_fuel_types():
-        if not session.query(FuelType).filter(FuelType.code == fueltype["code"]):
+        if not session.query(FuelType).filter(FuelType.code == fueltype["code"]).count():
             session.add(FuelType(code=fueltype["code"], name=fueltype["name"]))
 
-        if not session.query(AverageFuelPrice).filter(AverageFuelPrice.fueltype == fueltype["code"], AverageFuelPrice.updated == fueltype["price_update_date"]):
+        if not session.query(AverageFuelPrice).filter(AverageFuelPrice.fueltype == fueltype["code"], AverageFuelPrice.updated == fueltype["price_update_date"]).count():
             session.add(AverageFuelPrice(fueltype=fueltype["code"], price=fueltype["average_price"], updated=fueltype["price_update_date"])
     )
 
     session.commit()
 
-    for coordinate in session.query(Coordinate).all():
+    logging.info("Getting stations")
+    coordinates = session.query(Coordinate).filter(Coordinate.stations.any()).all()
+
+    if not coordinates: # the first time no stations have been found
+        coordinates = session.query(Coordinate).all()
+
+    for index, coordinate in enumerate(coordinates):
+        logging.info("Getting stations of {}/{}!".format(index, len(coordinates)))
+
         for station in connection.get_stations(coordinate.southWest, coordinate.northEast):
-            if not session.query(FuelStation).filter(FuelStation.id == station["id"]):
+            if not session.query(FuelStation).filter(FuelStation.id == station["id"]).count():
                 fuelstation = FuelStation(
                     id=station["id"],
                     name=station["name"],
                     brand_name=station["brand_name"],
                     display_name=station["display_name"],
-                    location_lat=station["location"]["latitutde"],
+                    location_lat=station["location"]["latitude"],
                     location_lon=station["location"]["longitude"],
                     street=station["address"]["street"],
                     postal_code=station["address"]["postal_code"],
-                    city=station["location"]["city"])
+                    city=station["address"]["city"],
+                    coordinate=coordinate.id)
+                logging.info("New fuelstation {} inserted!".format(fuelstation))
                 session.add(fuelstation)
-            for fuelspecification in station["fuel_specifications"]:
-                pass
-            
 
+            # loop all fueltypes and update price if not already done
+            for fuelspecification in station["fuel_specifications"]:
+                if fuelspecification and fuelspecification["present"] and fuelspecification["price"]:
+                    fuelstationprice = FuelStationPrice(
+                        fueltype=fuelspecification["code"],
+                        station=station["id"],
+                        price=fuelspecification["price"],
+                        price_level=fuelspecification.get("price_level"),
+                        record=fuelspecification.get("record_date"),
+                        source=fuelspecification.get("record_source")
+                    )
+                    if not session.query(FuelStationPrice).filter(
+                            FuelStationPrice.station == station["id"],
+                            FuelStationPrice.record == fuelspecification["record_date"],
+                            FuelStationPrice.fueltype == fuelspecification["code"]).count():
+                        logging.info("New fuelprice {} inserted!".format(fuelstationprice))
+                        session.add(fuelstationprice)
+    session.commit()
+    session.close()
+
+    logging.info("Finished!")
 
 
 if __name__ == "__main__":

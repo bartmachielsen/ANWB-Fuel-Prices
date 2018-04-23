@@ -30,4 +30,5 @@ class Connection:
                 ), headers={"apiKey": self.api_key})
         if response.status_code == 200:
             return response.json()["items"]
+        return []
         

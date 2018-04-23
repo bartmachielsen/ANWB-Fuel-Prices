@@ -12,6 +12,7 @@ class Coordinate(Base):
     southWest_lon = Column(Float)
     northEast_lat = Column(Float)
     northEast_lon = Column(Float)
+    stations = relationship('FuelStation')
 
     __table_args__ = (UniqueConstraint('southWest_lat', 'southWest_lon', 'northEast_lat', 'northEast_lon', name='unique_coordinates'),)
 
@@ -53,15 +54,23 @@ class FuelStation(Base):
     street = Column(String(100))
     postal_code = Column(String(10))
     city = Column(String(50))
-    
+    coordinate = Column(Integer, ForeignKey('coordinates.id'))
     fuelprices = relationship('FuelStationPrice')
+
+    def __str__(self):
+        return "<FuelStation(name={}, coordinate={})>".format(self.display_name, self.coordinate)
 
 class FuelStationPrice(Base):
     __tablename__ = "fuelstationprice"
     id = Column(Integer, primary_key=True)
     fueltype = Column(String(50), ForeignKey('fueltypes.code'))
-    station = Column(String(10), ForeignKey('fuelstation.id'))
-    price = Column(float)
+    station = Column(String(10), ForeignKey('fuelstations.id'))
+    price = Column(Float)
     price_level = Column(String(20))
     record = Column(String(40))
     source = Column(String(20))
+
+    __table_args__ = (UniqueConstraint('fueltype', 'station', 'record', name='unique_prices'),)
+
+    def __str__(self):
+        return "<FuelStationPrice(fueltype={}, station={}, price={}, price_level={})>".format(self.fueltype, self.station, self.price, self.price_level)
